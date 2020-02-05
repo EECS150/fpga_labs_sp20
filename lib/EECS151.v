@@ -28,6 +28,7 @@ module REGISTER(q, d, clk);
    output reg [N-1:0] q;
    input [N-1:0]      d;
    input 	     clk;
+   initial q = 0;
    always @(posedge clk)
     q <= d;
 endmodule // REGISTER
@@ -38,6 +39,7 @@ module REGISTER_CE(q, d, ce, clk);
    output reg [N-1:0] q;
    input [N-1:0]      d;
    input 	      ce, clk;
+   initial q = 0;
    always @(posedge clk)
      if (ce) q <= d;
 endmodule // REGISTER_CE
@@ -49,6 +51,7 @@ module REGISTER_R(q, d, rst, clk);
    output reg [N-1:0] q;
    input [N-1:0]      d;
    input 	      rst, clk;
+   initial q = 0;
    always @(posedge clk)
      if (rst) q <= INIT;
      else q <= d;
@@ -62,6 +65,7 @@ module REGISTER_R_CE(q, d, rst, ce, clk);
    output reg [N-1:0] q;
    input [N-1:0]      d;
    input 	      rst, ce, clk;
+   initial q = 0;
    always @(posedge clk)
      if (rst) q <= INIT;
      else if (ce) q <= d;
