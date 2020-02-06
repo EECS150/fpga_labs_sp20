@@ -10,6 +10,14 @@ module z1top_rate_counter (
 );
     assign LEDS[5:4] = 2'b11;
 
+    assign LEDS[5:4] = 2'b11;
+
+    // Button parser test circuit
+    // Sample the button signal every 500us
+    localparam integer B_SAMPLE_CNT_MAX = 0.0005 * `CLOCK_FREQ;
+    // The button is considered 'pressed' after 100ms of continuous pressing
+    localparam integer B_PULSE_CNT_MAX = 0.100 / 0.0005;
+
     // TODO: Your code to implement a 4-bit counter of rate 1 Hz (counting up)
     // or a parameterized rate counter. You can reuse the code in previous exercises
     // Use the buttons to provide control signals to your counter (refer to the spec)
