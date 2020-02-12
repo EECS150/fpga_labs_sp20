@@ -21,6 +21,7 @@
  REGISTER_R
  REGISTER_R_CE
 */
+`timescale 1ns/1ns
 
 // Register of D-Type Flip-flops
 module REGISTER(q, d, clk);
@@ -28,7 +29,7 @@ module REGISTER(q, d, clk);
    output reg [N-1:0] q;
    input [N-1:0]      d;
    input 	     clk;
-   initial q = 0;
+   initial q = {N{1'b0}};
    always @(posedge clk)
     q <= d;
 endmodule // REGISTER
@@ -39,7 +40,7 @@ module REGISTER_CE(q, d, ce, clk);
    output reg [N-1:0] q;
    input [N-1:0]      d;
    input 	      ce, clk;
-   initial q = 0;
+   initial q = {N{1'b0}};
    always @(posedge clk)
      if (ce) q <= d;
 endmodule // REGISTER_CE
@@ -51,7 +52,7 @@ module REGISTER_R(q, d, rst, clk);
    output reg [N-1:0] q;
    input [N-1:0]      d;
    input 	      rst, clk;
-   initial q = 0;
+   initial q = {N{1'b0}};
    always @(posedge clk)
      if (rst) q <= INIT;
      else q <= d;
@@ -65,7 +66,7 @@ module REGISTER_R_CE(q, d, rst, ce, clk);
    output reg [N-1:0] q;
    input [N-1:0]      d;
    input 	      rst, ce, clk;
-   initial q = 0;
+   initial q = {N{1'b0}};
    always @(posedge clk)
      if (rst) q <= INIT;
      else if (ce) q <= d;
@@ -77,22 +78,122 @@ endmodule // REGISTER_R_CE
  correctly to memory resources in the FPGA flow.  Eventually, will
  need to make an ASIC version.
 */
+// Single-ported ROM with asynchronous read
+module ASYNC_ROM(q, addr, clk);
+    parameter DWIDTH = 8;               // Data width
+    parameter AWIDTH = 8;               // Address width
+    parameter DEPTH = 256;              // Memory depth
+    parameter MEM_INIT_HEX_FILE = "";
+    parameter MEM_INIT_BIN_FILE = "";
+    input [AWIDTH-1:0] addr;            // Address input
+    input 	           clk;
+    output [DWIDTH-1:0] q;
+    reg [DWIDTH-1:0] mem [DEPTH-1:0];
+
+    initial begin
+        if (MEM_INIT_HEX_FILE != "") begin
+	          $readmemh(MEM_INIT_HEX_FILE, mem);
+        end
+        else if (MEM_INIT_BIN_FILE != "") begin
+	          $readmemb(MEM_INIT_BIN_FILE, mem);
+        end
+    end
+
+    assign q = mem[addr];
+endmodule // ASYNC_ROM
 
 // Single-ported RAM with asynchronous read
-module RAM(q, d, addr, we, clk);
-   parameter DWIDTH = 8;               // Data width
-   parameter AWIDTH = 8;               // Address width
-   parameter DEPTH = 256;              // Memory depth
-   input [DWIDTH-1:0] d;               // Data input
-   input [AWIDTH-1:0] addr;            // Address input
-   input 	      we, clk;
-   reg [DWIDTH-1:0]   mem [DEPTH-1:0];
-   output [DWIDTH-1:0] q;
-   always @(posedge clk)
-      if (we) mem[addr] <= d;
-   assign d = mem[addr];
-endmodule // RAM
+module ASYNC_RAM(q, d, addr, we, clk);
+    parameter DWIDTH = 8;               // Data width
+    parameter AWIDTH = 8;               // Address width
+    parameter DEPTH = 256;              // Memory depth
+    parameter MEM_INIT_HEX_FILE = "";
+    parameter MEM_INIT_BIN_FILE = "";
+    input [DWIDTH-1:0] d;               // Data input
+    input [AWIDTH-1:0] addr;            // Address input
+    input 	           we, clk;
+    output [DWIDTH-1:0] q;
+    reg [DWIDTH-1:0] mem [DEPTH-1:0];
+
+    initial begin
+        if (MEM_INIT_HEX_FILE != "") begin
+	          $readmemh(MEM_INIT_HEX_FILE, mem);
+        end
+        else if (MEM_INIT_BIN_FILE != "") begin
+	          $readmemb(MEM_INIT_BIN_FILE, mem);
+        end
+    end
+
+    always @(posedge clk) begin
+        if (we)
+            mem[addr] <= d;
+    end
+
+    assign q = mem[addr];
+endmodule // ASYNC_RAM
 
 /*
  To add: multiple ports, synchronous read, ASIC synthesis support.
  */
+
+// Single-ported ROM with synchronous read
+module SYNC_ROM(q, addr, clk);
+    parameter DWIDTH = 8;               // Data width
+    parameter AWIDTH = 8;               // Address width
+    parameter DEPTH = 256;              // Memory depth
+    parameter MEM_INIT_HEX_FILE = "";
+    parameter MEM_INIT_BIN_FILE = "";
+    input [AWIDTH-1:0] addr;            // Address input
+    input 	           clk;
+    output [DWIDTH-1:0] q;
+    reg [DWIDTH-1:0] mem [DEPTH-1:0];
+
+    initial begin
+        if (MEM_INIT_HEX_FILE != "") begin
+	          $readmemh(MEM_INIT_HEX_FILE, mem);
+        end
+        else if (MEM_INIT_BIN_FILE != "") begin
+	          $readmemb(MEM_INIT_BIN_FILE, mem);
+        end
+    end
+
+    reg [DWIDTH-1:0] read_reg_val;
+    always @(posedge clk) begin
+        read_reg_val <= mem[addr];
+    end
+
+    assign q = read_reg_val;
+endmodule // SYNC_ROM
+
+// Single-ported RAM with synchronous read
+module SYNC_RAM(q, d, addr, we, clk);
+    parameter DWIDTH = 8;               // Data width
+    parameter AWIDTH = 8;               // Address width
+    parameter DEPTH = 256;              // Memory depth
+    parameter MEM_INIT_HEX_FILE = "";
+    parameter MEM_INIT_BIN_FILE = "";
+    input [DWIDTH-1:0] d;               // Data input
+    input [AWIDTH-1:0] addr;            // Address input
+    input 	           we, clk;
+    output [DWIDTH-1:0] q;
+    reg [DWIDTH-1:0] mem [DEPTH-1:0];
+
+    initial begin
+        if (MEM_INIT_HEX_FILE != "") begin
+	          $readmemh(MEM_INIT_HEX_FILE, mem);
+        end
+        else if (MEM_INIT_BIN_FILE != "") begin
+	          $readmemb(MEM_INIT_BIN_FILE, mem);
+        end
+    end
+
+    reg [DWIDTH-1:0] read_reg_val;
+    always @(posedge clk) begin
+        if (we)
+            mem[addr] <= d;
+        read_reg_val <= mem[addr];
+    end
+
+    assign q = read_reg_val;
+endmodule // SYNC_RAM
+
