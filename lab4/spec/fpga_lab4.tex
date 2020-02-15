@@ -252,7 +252,11 @@ In summary, to make your life easier when designing the I2S protocol, you can us
   \item Ensure that \textbf{16 bits} of an audio frame is sent in one half period of the \verb|LRCK| clock starting from the MSB to the LSB. Send that frame again for the remaining half period of the \verb|LRCK| clock (i.e., we will be sending the same audio frame to both the left and right channel). You can send each bit at the rising edge of the \verb|SCLK| clock.
 \end{enumerate}
 
-The reason we want to keep the left and the right frames similar is to reduce the memory storage on the FPGA. You are, however, free to explore different settings to achieve good audio output. You should write your own testbench when you design the I2S protocol. Observe the waveforms of the clock signals to see if they match the spec/suggestions.
+The reason we want to keep the left and the right frames similar is to reduce the memory storage on the FPGA. You are, however, free to explore different settings to achieve good audio output. There are some testbenches provided to help you test the I2S interface implementation:
+
+\verb|i2s_bit_serial_tb.v|: this testbench tests if you can send a sequence of bits from the input sample audio data starting from the MSB in successive cycles.
+
+\verb|i2s_controller_tb.v|: this testbench tests if the ratios of the clock signals you generated match the spec. You should ensure that the ratios are integers (or very close to integers), otherwise you might not be able to generate the sound on the chip, or your sound might have some noise.
 
 \subsection{Tone Generator}
 
@@ -265,6 +269,8 @@ Your task is to complete the logic of \verb|lab4/src/z1top_tone_generator.v| so 
 python3 tone_gen.py 440 2 65536
 \end{minted}
 
+You can use the \verb|z1top_tone_generator_tb.v| testbench to verify if your top-level module generates correct audio as in \verb|tone_440_data_bin.mif|. The testbench expects correct audio bits at every rising edge of the serial clock (\verb|PMOD_PIN_3|). You may want to change it depending on how you want to implement the I2S interface. The testbench may take a few minutes to complete, so you should abort it as long as you spot any mismatches' messages.
+ 
 \subsection{Multi-tone Player (Optional)}
 
 In this section, we will build a circuit that can play more than one tone. It's entirely up to you how many tones you want to play, just note that the FPGA memory resource is scarce. You might even want to use both LUTRAMs and BRAMs to store tone data. It might also take longer to generate a bitstream if you try to exhaust the resource on the FPGA. Each tone is controlled by one button on the board (you can use a combination of buttons and switches to expand the number of tones you want to support). Press a button, and the tone will play for a fixed time duration of your own choice in your design (a few seconds). It's like a piano, but we are limited in the number of tones and keys we want to play.
@@ -296,6 +302,7 @@ If you are confused, or unsure how to move on in any parts above, please do not 
 
 In this lab, we have attempted to push the PYNQ board to its limit for the task of music streaming. The amount of on-chip storage is clearly not enough to play something like a song. We could, however, leverage the off-chip DRAM memory with a capacity of 512MB, but that would require our logic to communication with the ARM processor since it acts as a memory controller to the off-chip DRAM. In addition, off-chip memory access is unpredictable and we would need some buffering scheme to ensure steady music streaming. Another viable path is to build an audio synthesizer that generates music from a list of notes in real time. Those are beyond the scope of our lab for now.
 
+\newpage
 \section{Lab Deliverables (due: 11.59PM, Feb 27th, 2020)}
 \subsection{Lab Checkoff}
 To checkoff for this lab, have these things ready to show the TA:
