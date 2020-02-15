@@ -1,3 +1,4 @@
+`include "../../lib/EECS151.v"
 
 module sum_sync_mem #(
     parameter AWIDTH = 10,
