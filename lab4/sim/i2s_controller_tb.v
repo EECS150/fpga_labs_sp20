@@ -12,13 +12,13 @@ module i2s_controller_tb();
     always #(CLK_PERIOD / 2) clock <= ~clock;
     
     wire mclk;
-    wire lrclk;
+    wire lrck;
     wire sclk;
 
     i2s_controller dut (
         .clk(clock),
         .mclk(mclk),
-        .lrclk(lrclk),
+        .lrck(lrck),
         .sclk(sclk)
     );
 
@@ -36,8 +36,8 @@ module i2s_controller_tb();
        @(posedge mclk); m_start = $time;
        @(posedge mclk); m_end = $time;
        #100;
-       @(posedge lrclk); lr_start = $time;
-       @(posedge lrclk); lr_end = $time;
+       @(posedge lrck); lr_start = $time;
+       @(posedge lrck); lr_end = $time;
        #100;
        @(posedge sclk); s_start = $time;
        @(posedge sclk); s_end = $time;
