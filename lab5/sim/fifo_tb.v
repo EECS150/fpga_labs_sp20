@@ -45,12 +45,10 @@ module fifo_tb();
 
     // This could be a bit verbose
     always @(posedge clk) begin
-        $display("At time %d, enq_valid=%d, enq_ready=%d, enq_data=%d, deq_valid=%d, deq_ready=%d, deq_data=%d, r_addr=%d, w_addr=%d, full=%d, empty=%d, WRITE=%d, READ=%d",
+        $display("At time %d, enq_valid=%d, enq_ready=%d, enq_data=%d, deq_valid=%d, deq_ready=%d, deq_data=%d, WRITE=%d, READ=%d",
             $time,
             enq_valid, enq_ready, enq_data,
             deq_valid, deq_ready, deq_data,
-            dut.read_addr_val, dut.write_addr_val,
-            (dut.write_state_val == dut.FULL), (dut.read_state_val == dut.EMPTY),
             (enq_valid && enq_ready ? enq_data : 32'dX),
             (deq_valid && deq_ready ? deq_data : 32'dX));
     end
