@@ -10,9 +10,9 @@ module pixel_stream #(
     input pixel_clk,
     input rst,
 
-    output [IMG_DATA_WIDTH-1:0] pixel_stream_data,
-    output pixel_stream_valid,
-    input pixel_stream_ready
+    output [IMG_DATA_WIDTH-1:0] pixel_stream_dout_data,
+    output pixel_stream_dout_valid,
+    input pixel_stream_dout_ready
 );
     wire [IMG_ADDR_WIDTH-1:0] img_mem_addr;
     wire [IMG_DATA_WIDTH-1:0] img_mem_rdata;
@@ -24,7 +24,7 @@ module pixel_stream #(
     ) img_memory (
         .q(img_mem_rdata), .addr(img_mem_addr), .clk(pixel_clk));
 
-    wire pixel_stream_fire = pixel_stream_valid & pixel_stream_ready;
+    wire pixel_stream_fire = pixel_stream_dout_valid & pixel_stream_dout_ready;
 
     wire [IMG_ADDR_WIDTH-1:0] pixel_index_val, pixel_index_next;
     wire pixel_index_ce, pixel_index_rst;
@@ -43,8 +43,8 @@ module pixel_stream #(
     // Delay 1 cycle because SYNC_ROM has one-cycle read
     wire delay_val;
     REGISTER_R #(.N(1), .INIT(0)) delay (.q(delay_val), .d(1'b1), .rst(rst), .clk(pixel_clk));
-    assign pixel_stream_valid = (delay_val == 1'b1);
-    assign pixel_stream_data = img_mem_rdata;
+    assign pixel_stream_dout_valid = (delay_val == 1'b1);
+    assign pixel_stream_dout_data = img_mem_rdata;
     assign img_mem_addr = pixel_index_val;
 
 endmodule

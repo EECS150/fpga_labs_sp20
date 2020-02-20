@@ -62,13 +62,13 @@ module z1top_fifo_display (
     REGISTER_R_CE #(.N(1)) blue_enable_r (.q(blue_enable), .d(1'b1), 
         .ce(blue_select), .rst(gray_select | red_select | green_select), .clk(pixel_clk));
 
-    wire [7:0] pixel_stream_dout;
+    wire [7:0] pixel_stream_dout_data;
     wire pixel_stream_dout_valid, pixel_stream_dout_ready;
 
     pixel_stream pixel_stream (
         .pixel_clk(pixel_clk),                              // input
         .rst(1'b0),                                         // input
-        .pixel_stream_dout_data(pixel_stream_dout),         // output
+        .pixel_stream_dout_data(pixel_stream_dout_data),    // output
         .pixel_stream_dout_valid(pixel_stream_dout_valid),  // output
         .pixel_stream_dout_ready(pixel_stream_dout_ready)   // input
     );
@@ -91,12 +91,12 @@ module z1top_fifo_display (
         .deq_data(fifo_deq_data),    // output
         .deq_ready(fifo_deq_ready)); // input
 
-    wire [23:0] pixel_stream_din;
+    wire [23:0] pixel_stream_din_data;
     wire pixel_stream_din_valid, pixel_stream_din_ready;
 
     display_controller display_controller (
        .pixel_clk(pixel_clk),                           // input
-       .pixel_stream_din_data(pixel_stream_din),        // input
+       .pixel_stream_din_data(pixel_stream_din_data),   // input
        .pixel_stream_din_valid(pixel_stream_din_valid), // input
        .pixel_stream_din_ready(pixel_stream_din_ready), // output
        .video_out_pData(video_out_pData),               // output
@@ -109,12 +109,12 @@ module z1top_fifo_display (
     // relevant signals from both ends
     // (valid goes with valid, ready goes with ready, data goes with data)
     assign fifo_enq_valid          = pixel_stream_dout_valid;
-    assign fifo_enq_data           = pixel_stream_dout;
+    assign fifo_enq_data           = pixel_stream_dout_data;
     assign pixel_stream_dout_ready = fifo_enq_ready;
 
     assign fifo_deq_ready          = pixel_stream_din_ready;
     assign pixel_stream_din_valid  = fifo_deq_valid;
-    assign pixel_stream_din        = (red_enable) ? {fifo_deq_data, 8'b0, 8'b0} :
+    assign pixel_stream_din_data   = (red_enable) ? {fifo_deq_data, 8'b0, 8'b0} :
                                      (green_enable) ? {8'b0, 8'b0, fifo_deq_data} :
                                      (blue_enable) ? {8'b0, fifo_deq_data, 8'b0} :
                                      (gray_enable) ? {fifo_deq_data, fifo_deq_data, fifo_deq_data} :

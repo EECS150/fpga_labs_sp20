@@ -39,7 +39,7 @@ module display_controller #(
 ) (
     input pixel_clk,
 
-    input [23:0] pixel_stream_din,
+    input [23:0] pixel_stream_din_data,
     input pixel_stream_din_valid,
     output pixel_stream_din_ready,
 
@@ -76,7 +76,7 @@ module display_controller #(
 
     // TODO: fill in the remaining logic to implement the display controller
     // Make sure your signals meet the timing specification for HSync, VSync, and Video Active
-    // For task 1, do not worry about the 'pixel_stream_din', just set 'video_out_pData'
+    // For task 1, do not worry about the 'pixel_stream_din_data', just set 'video_out_pData'
     // to some constant value to test if your code works with a monitor
     // For task 2, you need to implement proper control logic to enqueue the 'pixel_stream_din'
 
@@ -85,6 +85,6 @@ module display_controller #(
     assign video_out_pVDE = 1'b1;
 
     assign video_out_pdata = 24'h0000FF; // task 1
-//    assign video_out_pData = pixel_stream_din; // task 2
+//    assign video_out_pData = pixel_stream_din_data; // task 2
 
 endmodule
