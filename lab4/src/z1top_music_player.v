@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 `include "../../lib/EECS151.v"
 
-module z1top_audio_player1 (
+module z1top_music_player (
     input CLK_125MHZ_FPGA,
     input [3:0] BUTTONS,
     input [1:0] SWITCHES,
@@ -59,7 +59,6 @@ module z1top_audio_player1 (
 
     localparam MUSIC_ADDR_WIDTH = 18;
     localparam MUSIC_DATA_WIDTH = NUM_SAMPLE_BITS;
-    localparam MUSIC_NUM_SAMPLES = 44100;
     localparam MUSIC_MEM_DEPTH = 262144;
 
     wire [MUSIC_ADDR_WIDTH-1:0] music_mem_addr;

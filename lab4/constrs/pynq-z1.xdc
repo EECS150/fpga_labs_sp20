@@ -29,8 +29,6 @@ set_property -dict {PACKAGE_PIN M19 IOSTANDARD LVCMOS33} [get_ports {SWITCHES[1]
 
 set_property -dict { PACKAGE_PIN H16   IOSTANDARD LVCMOS33 } [get_ports { CLK_125MHZ_FPGA }];
 create_clock -add -name CLK_125MHZ_FPGA -period 8.00 -waveform {0 4} [get_ports { CLK_125MHZ_FPGA }];
-set_property -dict { PACKAGE_PIN H16   IOSTANDARD LVCMOS33 } [get_ports { sys_clock }];
-create_clock -add -name CLK_125MHZ_FPGA -period 8.00 -waveform {0 4} [get_ports { sys_clock }];
 
 ##Pmod Header JA
 set_property -dict { PACKAGE_PIN Y18   IOSTANDARD LVCMOS33 } [get_ports { PMOD_OUT_PIN1  }]
