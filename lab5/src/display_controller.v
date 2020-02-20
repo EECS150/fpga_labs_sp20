@@ -84,7 +84,7 @@ module display_controller #(
     assign video_out_pVSync = 1'b1;
     assign video_out_pVDE = 1'b1;
 
-    assign video_out_pdata = 24'h0000FF; // task 1
+    assign video_out_pData = 24'h0000FF; // task 1
 //    assign video_out_pData = pixel_stream_din_data; // task 2
 
 endmodule
