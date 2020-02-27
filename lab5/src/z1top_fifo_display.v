@@ -81,7 +81,7 @@ module z1top_fifo_display (
 
     fifo #(.WIDTH(FIFO_WIDTH), .LOGDEPTH (FIFO_LOGDEPTH)) FIFO (
         .clk(pixel_clk),
-        .reset(1'b0),
+        .rst(1'b0),
 
         .enq_valid(fifo_enq_valid),  // input
         .enq_data(fifo_enq_data),    // input
