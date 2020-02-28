@@ -52,8 +52,8 @@ module z1top_fifo_io (
     assign time_cnt_next = time_cnt_val + 1;
     assign time_cnt_rst = (time_cnt_val == 125_000_000 / 2 - 1);
 
-    // read from the FIFO after 0.01 sec and SWITCHES[0] is ON
-    assign fifo_deq_ready = (time_cnt_val == 125_000_000 / 100 - 1) && (SWITCHES[0] == 1);
+    // read from the FIFO after 0.5 sec and SWITCHES[0] is OFF
+    assign fifo_deq_ready = (time_cnt_val == 125_000_000 / 2 - 1) && (SWITCHES[0] == 0);
 
     wire [3:0] led_status_val, led_status_next;
     wire led_status_ce;
