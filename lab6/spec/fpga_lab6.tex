@@ -225,7 +225,7 @@ Alternatively, if you don't have a monitor around, you can test your UART Receiv
 As an example, on your workstation, run:
 
 \begin{minted}{bash}
-screen \$SERIALTTY 115200
+screen $SERIALTTY 115200
 \end{minted}
 
 This tells \verb|screen|, a serial terminal, to open up the serial device with a baud rate of 115200 (you might have to run this with \verb|sudo| on your laptop). If \verb|$SERIALTTY| is not defined on your laptop, look for the name of the device file that the Serial Device is attached to, e.g. \verb|/dev/ttyUSB0| using \texttt{dmesg}. See the Appendix for more information.
@@ -285,7 +285,7 @@ Select the signal \verb|FPGA_SERIAL_RX| from the popped-up window. Now, we will 
 Now, in the \emph{Status - hw\_ila\_1} pane, click the play button ("Run trigger for this ILA core"). It will runs until waiting for trigger (50 \%). To complete the core execution, we will provide a \textbf{real} trigger from the serial terminal. Run
 
 \begin{minted}{bash}
-screen \$SERIALTTY 115200
+screen $SERIALTTY 115200
 \end{minted}
 
 on a separate terminal, and then press a key. This will send serial input to the PYNQ, and trigger the ILA core. Now you will see the waveform updated! The following picture shows one example which 'a' is pressed. You can see that \verb|rx_shift_val| is sampled in the middle of the symbol edge time, and one symbol edge time is roughly 345 cycles (note that we are using a clock of 40 MHz to drive the modules in this design). This is all happening when your PYNQ board is actually running.
@@ -329,7 +329,7 @@ If you are more comfortable with the GUI mode, you can open the Vivado project r
 The \verb|z1top_uart_tx| module stores a text data locally in the block RAMs. The role of the UART Transmitter is to dequeue that data and send it to your workstation over the serial interface. You should be able to see the text on your serial terminal. Run
 
 \begin{minted}{bash}
-screen \$SERIALTTY 115200
+screen $SERIALTTY 115200
 \end{minted}
 
 After the FPGA is programmed, turn on \verb|SWITCHES[1]|. The text will appear on the serial terminal. You can also use the \verb|BUTTONS| and \verb|SWITCHES[0]| to provide input to the UART Transmitter. Read the code \verb|lab6/src/z1top_uart_tx.v| to see what should be expected.
@@ -342,6 +342,8 @@ In this section, we will put both the UART Receiver and Transmitter together, an
 
 # Build Vivado project z1top_uart_echo_proj
 make build-project proj=z1top_uart_echo
+
+# There is no testbench provided for this module
 
 # Generate bitstream
 make write-bitstream proj=z1top_uart_echo
