@@ -12,5 +12,7 @@ add_files -norecurse src/color.vh
 add_files -norecurse src/point_in_triangle.v
 add_files -norecurse src/draw_triangle.v
 
+check_syntax
+
 # This project needs Block Design
 source scripts/z1top_draw_triangle_bd.tcl

@@ -11,5 +11,7 @@ add_files -norecurse src/uart_receiver.v
 # Add memory initialization file
 add_files -norecurse src/ucb_wheeler_hall_bin.mif
 
+check_syntax
+
 # This project needs Block Design
 source scripts/z1top_uart_rx_bd.tcl
