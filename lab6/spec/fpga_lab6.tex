@@ -117,6 +117,8 @@ Copy the following files from previous labs to your working directory.
   \item \verb|display_controller.v|
 \end{itemize}
 
+In addition, make sure to remove all the "`include ../lib/EECS151.v" statements in your code before moving on, otherwise they won't work with the scripts we provide.
+
 In this lab, we will implement a UART serial protocol for transmitting and receiving data over serial interface. We will use a Pmod USB-UART module connecting to the PYNQ-Z1 to interface with a host machine. If you cannot find any Pmod USB-UART module to work with, please talk to the TA.
 
 \section{UART Serial Device}
@@ -182,7 +184,7 @@ Once we have received a full character over the serial port, we want to hold the
 
 \subsubsection{Testing}
 
-Use the following command to build your project with the UART Receiver module.
+Use the following command to build your project with the UART Receiver module. If you get error during the build project, please remove all the "`include ../lib/EECS151.v" statements in your code.
 
 \begin{minted}{bash}
 # This command builds a Vivado project named z1top_uart_rx_proj
