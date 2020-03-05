@@ -75,12 +75,19 @@ module pixel_stream #(
         .rst(pixel_write_index_rst),
         .clk(pixel_clk));
 
-    // Delay 1 cycle due to synchronous read
+    wire read_en_val;
+    REGISTER_R_CE #(.N(1), .INIT(0)) read_en_reg (
+        .q(read_en_val),
+        .d(1'b1),
+        .ce(read_en),
+        .rst(rst), .clk(pixel_clk));
+
     wire delay_val;
-    REGISTER_R_CE #(.N(1), .INIT(0)) delay (.q(delay_val), .d(1'b1), .ce(read_en), .rst(rst), .clk(pixel_clk));
+    // Delay 1 cycle due to synchronous read
+    REGISTER #(.N(1)) delay (.q(delay_val), .d(read_en_val), .clk(pixel_clk));
 
     assign pixel_read_index_next = pixel_read_index_val + 1;
-    assign pixel_read_index_ce = pixel_stream_dout_fire;
+    assign pixel_read_index_ce = read_en_val & pixel_stream_dout_ready;
     assign pixel_read_index_rst = (pixel_read_index_val == IMG_NUM_PIXELS - 1) | rst;
 
     assign pixel_write_index_next = pixel_write_index_val + 1;

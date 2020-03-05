@@ -37,7 +37,7 @@ module pixel_stream #(
         .clk(pixel_clk));
 
     assign pixel_index_next = pixel_index_val + 1;
-    assign pixel_index_ce = pixel_stream_fire;
+    assign pixel_index_ce = pixel_stream_dout_ready;
     assign pixel_index_rst = (pixel_index_val == IMG_NUM_PIXELS - 1) | rst;
 
     // Delay 1 cycle because SYNC_ROM has one-cycle read
