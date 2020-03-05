@@ -6,8 +6,8 @@ if {![file exists $bitstream_file]} {
     exit
 }
 
-open_hw_manager
-connect_hw_server -url localhost:3121 -allow_non_jtag
+open_hw
+connect_hw_server
 open_hw_target
 
 set_property PROGRAM.FILE ${bitstream_file} [get_hw_devices xc7z020_1]
