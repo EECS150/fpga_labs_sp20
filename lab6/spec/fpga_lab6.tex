@@ -217,7 +217,11 @@ make program-file bs=bitstream_files/z1top_uart_rx.bit
 You can take a look at the file \verb|lab6/src/z1top_uart_rx.v| to see what the top-level module does. Similar to the previous lab, it interfaces with a display controller for streaming image stored locally in the Block RAMs. However, the module has been extended to overwrite the existing image with a new one from the serial input (\verb|FPGA_SERIAL_RX|). Your UART Receiver will receiver a serial input from the host, and enqueue the pixel data to the module \verb|pixel_stream.v|. We will run a Python script to provide a new image data to the PYNQ via the serial interface.
 
 \begin{minted}{bash}
-python3 stream_img_from_serial.py
+# If some Python packages are missing, make sure you install them on the workstation
+# Those are likely needed:
+# pip3 install --user matplotlib
+# pip3 install --user Image
+/usr/bin/python3 scripts/stream_img_from_serial.py
 \end{minted}
 
 If your module works correctly, when you hook a monitor to your PYNQ through an HDMI cable and turn on \verb|SWITCHES[1]|, you will see that the content of the current displayed image is being overwritten with a new image progressively from top to bottom.
