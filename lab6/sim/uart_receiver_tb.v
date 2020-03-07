@@ -4,8 +4,10 @@ module uart_receiver_tb();
     localparam CLOCK_FREQUENCY  = 125_000_000;
     localparam CLOCK_PERIOD     = 1_000_000_000 / CLOCK_FREQUENCY;
     localparam BAUD_RATE        = 115_200;
-    localparam OFFSET           = 10;
-    localparam SYMBOL_EDGE_TIME = CLOCK_FREQUENCY / BAUD_RATE - OFFSET;
+    localparam BAUD_PERIOD      = 1_000_000_000 / BAUD_RATE; // 8680.55 ns
+
+    localparam CHAR0 = 8'h61; // ~ 'a'
+    localparam NUM_CHARS = 10;
 
     reg clk, rst;
     initial clk = 0;
@@ -16,7 +18,10 @@ module uart_receiver_tb();
     reg data_out_ready;
     reg serial_in;
 
-    uart_receiver dut (
+    uart_receiver #(
+        .CLOCK_FREQ(CLOCK_FREQUENCY),
+        .BAUD_RATE(BAUD_RATE)
+    ) dut (
         .clk(clk),
         .rst(rst),
 
@@ -26,30 +31,53 @@ module uart_receiver_tb();
         .serial_in(serial_in)            // input
     );
 
-    reg [7:0] rx_char;
-    reg rx_fired;
+    reg data_out_fired;
+    integer i, c;
 
-    integer i;
-    localparam CHAR1 = 8'h41;
-    localparam CHAR2 = 8'h42;
-    localparam CHAR3 = 8'h43;
-    localparam CHAR4 = 8'h44;
+    // this holds characters sent by the host via serial line
+    reg [7:0] chars_from_host [NUM_CHARS-1:0];
+    // this holds characters received from the host and be dequeued to data_out via R/V
+    reg [7:0] chars_to_data_out [NUM_CHARS-1:0];
 
-    always @(posedge clk) begin
-        if (data_out_valid & data_out_ready) begin
-            rx_char <= data_out;
-            rx_fired <= 1'b1;
+    // initialize test vectors
+    initial begin
+        #0
+        for (c = 0; c < NUM_CHARS; c = c + 1) begin
+           chars_from_host[c] = CHAR0 + c;
         end
     end
 
-    // This only tests receiving a single character
-    // You should add more test, such as receiving multiple characters in a row
+    reg [31:0] cnt;
+
+    always @(posedge clk) begin
+        // data considered "dequeued" ("fired") when both valid and ready are
+        // HIGH
+        if (data_out_valid & data_out_ready) begin
+            chars_to_data_out[cnt] <= data_out;
+            data_out_fired <= 1'b1;
+            cnt <= cnt + 1;
+            $display("[time %t] [data_out] Got char: 8'h%h", $time, data_out);
+        end
+
+        // data_out_valid should be LOW in the next rising edge
+        // after "fired"
+        if (data_out_fired) begin
+            if (data_out_valid == 1'b1) begin
+                $display("[time %t] Failed: data_out_valid should go LOW after firing data_out\n", $time);
+                $finish();
+            end
+            data_out_fired <= 1'b0;
+        end
+    end
+
+    integer num_mismatches = 0;
+
     initial begin
         #0;
+        cnt = 0;
         rst = 1;
         data_out_ready = 0;
-        rx_char = CHAR1;
-        rx_fired = 0;
+        data_out_fired = 0;
         serial_in = 1;
 
         // Hold reset for a while
@@ -57,39 +85,56 @@ module uart_receiver_tb();
 
         rst = 0;
 
+        if (data_out_valid == 1'b1) begin
+            $display("[time %t] Failed: data_out_valid should not be HIGH initially", $time);
+            $finish();
+        end
+
         // the testbench is ready to accept uart_receiver output data
         data_out_ready = 1;
 
-        // Pull serial_in LOW to start the transaction (START bit)
-        serial_in = 0;
-        #(SYMBOL_EDGE_TIME * CLOCK_PERIOD);
+        // Delay for some time
+        repeat (100) @(posedge clk);
 
-        for (i = 0; i < 8; i = i + 1) begin
-            serial_in = rx_char[i];
-            #(SYMBOL_EDGE_TIME * CLOCK_PERIOD);
+        // Send NUM_CHARS characters in a row non-stop
+        for (c = 0; c < NUM_CHARS; c = c + 1) begin
+            // This emulates how serial line sends data
+            // Start bit
+            serial_in = 0;
+            #(BAUD_PERIOD);
+            // Data bits (payload)
+            for (i = 0; i < 8; i = i + 1) begin
+                serial_in = chars_from_host[c][i];
+                #(BAUD_PERIOD);
+            end
+            // Stop bit
+            serial_in = 1;
+            #(BAUD_PERIOD);
+            $display("[time %t] [serial_in] Sent char 8'h%h", $time, chars_from_host[c]);
         end
 
-        // IDLE bit
-        serial_in = 1;
-        #(SYMBOL_EDGE_TIME * CLOCK_PERIOD);
+        // Delay for some time
+        repeat (3) @(posedge clk);
 
-        // Waiting for uart_receiver to fire output data
-        while (rx_fired == 0) begin
-            @(posedge clk);
+        // Check results
+        for (c = 0; c < NUM_CHARS; c = c + 1) begin
+            if (chars_to_data_out[c] !== chars_from_host[c]) begin
+                $display("Mismatches at char %d: char_from_host=%h, char_to_data_out=%h",
+                         c, chars_from_host[c], chars_to_data_out[c]);
+                num_mismatches = num_mismatches + 1;
+            end
         end
 
-        $display("Got char: %h", rx_char);
-        if (data_out != CHAR1)
-            $display("Failed: Payload mismatches: Sent=%d Got=%d\n", CHAR1, rx_char);
+        if (num_mismatches > 0)
+            $display("Test failed");
         else
             $display("Test passed!");
 
-        #100;
         $finish();
     end
 
     initial begin
-        #(SYMBOL_EDGE_TIME * CLOCK_PERIOD * 12);
+        #(BAUD_PERIOD * 10 * (NUM_CHARS + 1));
         $display("TIMEOUT");
         $finish();
     end
