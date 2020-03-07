@@ -172,17 +172,26 @@ Notice that both sides must agree on a baudrate for this scheme to be feasible.
 
 \subsection{UART Receiver}
 
+\begin{center}
+\includegraphics[width=0.4\textwidth]{figs/UART_Receiver.png}
+\end{center}
+
 The receive side of the serial device is essentially just a shift register to shift bits from the serial line.
 However, care must be taken into determining when to shift bits in.
 If we attempt to sample the serial signal directly on the edge between two symbols, we are likely to sample on the wrong side of the edge and get the wrong value for that bit.
 One solution is to wait halfway into a cycle (until \verb|SampleTime| on the diagram) before reading a bit in to the shift register.
 
-One other subtlety of the receive side is correctly implementing the ready/valid interface.
-Once we have received a full character over the serial port, we want to hold the valid signal high until the ready signal goes high, after which the valid signal will be driven low until we receive another character.
+In addition, the UART Receiver module dequeues the received character to a consumer block on FPGA via Ready/Valid interface. Therefore, once we have received a full character over the serial port, the Valid signal should go HIGH until the Ready signal goes HIGH, after which the Valid signal will be driven LOW until we receive another character. For simplicity, let's assume the consumer block is always ready to accept data from the UART Receiver, i.e. you do not need to handle back-pressure from R/V interface to the serial line.
 
 \textbf{Your task} is to complete the implementation of UART Receiver in the file \verb|lab6/src/uart_receiver.v|.
 
 \subsubsection{Testing}
+
+We will test our UART Receiver with the provided top-level module \verb|z1top_uart_rx|. You can take a look at the file \verb|lab6/src/z1top_uart_rx.v| to see what it does. Similar to the previous lab, it interfaces with a display controller for streaming image stored locally in the Block RAMs. However, the module has been extended to receive new image from the serial input (\verb|FPGA_SERIAL_RX|). Your UART Receiver will receive a serial input from the host, and enqueue the pixel data to the module \verb|pixel_stream.v|. 
+
+\begin{center}
+\includegraphics[width=0.6\textwidth]{figs/z1top_uart_rx.png}
+\end{center}
 
 Use the following command to build your project with the UART Receiver module. If you get error during the build project, please remove all the "`include ../lib/EECS151.v" statements in your code.
 
@@ -200,7 +209,7 @@ You can simulate your design with the provided testbench \verb|lab6/sim/uart_rec
 make sim proj=z1top_uart_rx tb=uart_receiver_tb
 \end{minted}
 
-The simulation will tell you if your design passes the testbench. To see the wavefor, you can open the Vivado project.
+The testbench attempts to test if your UART Receiver is capable of receiving multiple characters in a row from the serial line. In addition, its R/V interface is also tested to make sure it can dequeue the received characters. You can open the Vivado project to inspect the waveform.
 
 Once you are done with simulation, proceed to generate bitstream.
 
@@ -214,17 +223,17 @@ This command launches Synthesis step, followed by Implementation step to generat
 make program-fpga bs=bitstream_files/z1top_uart_rx.bit
 \end{minted}
 
-You can take a look at the file \verb|lab6/src/z1top_uart_rx.v| to see what the top-level module does. Similar to the previous lab, it interfaces with a display controller for streaming image stored locally in the Block RAMs. However, the module has been extended to overwrite the existing image with a new one from the serial input (\verb|FPGA_SERIAL_RX|). Your UART Receiver will receiver a serial input from the host, and enqueue the pixel data to the module \verb|pixel_stream.v|. We will run a Python script to provide a new image data to the PYNQ via the serial interface.
+We will run a Python script to provide a new image data to the PYNQ via the serial interface.
 
 \begin{minted}{bash}
 # If some Python packages are missing, make sure you install them on the workstation
-# Those are likely needed:
+# These packages are likely needed:
 # pip3 install --user matplotlib
 # pip3 install --user Image
 /usr/bin/python3 scripts/stream_img_from_serial.py
 \end{minted}
 
-If your module works correctly, when you hook a monitor to your PYNQ through an HDMI cable and turn on \verb|SWITCHES[1]|, you will see that the content of the current displayed image is being overwritten with a new image progressively from top to bottom.
+If your module works correctly, when you hook a monitor to your PYNQ through an HDMI cable and turn on \verb|SWITCHES[1]|, you will see that the original displayed image is being overwritten with a new image gradually. If your image is all messed up, you should check the logic of when you reset the bit counter and the clock counter (e.g., too late?). Since the serial interface is asynchronous, do not make any assumption that it will behave nicely (synchronously) with your FPGA clock signal.
 
 Alternatively, if you don't have a monitor around, you can test your UART Receiver with a serial terminal on your workstation.
 
@@ -236,7 +245,10 @@ screen $SERIALTTY 115200
 
 This tells \verb|screen|, a serial terminal, to open up the serial device with a baud rate of 115200 (you might have to run this with \verb|sudo| on your laptop). If \verb|$SERIALTTY| is not defined on your laptop, look for the name of the device file that the Serial Device is attached to, e.g. \verb|/dev/ttyUSB0| using \texttt{dmesg}. See the Appendix for more information.
 
-When you type a character into the terminal, it is sent to the FPGA over the \verb|FPGA_SERIAL_RX| line, encoded in ASCII. Because we don't have a UART Transmitter yet, we won't be able to see the character echoed back to the screen for now! Try pressing a few keys and see if the LEDS show correct bit sequence of the ASCII code of the key you pressed. Note that \verb|SWITCHES[0] == 0| displays the four lower bits, and \verb|SWICHES[0] == 1| displays the four upper bits. Read the code to understand how the LEDS status is shown according to serial input. This is a low-stress test for UART Receiver module, since key pressing won't be as fast as a computer program.
+When you type a character into the terminal, it is sent to the FPGA over the \verb|FPGA_SERIAL_RX| line, encoded in ASCII. Because we don't have a UART Transmitter yet, we won't be able to see the character echoed back to the screen for now! Try pressing a few keys and see if the LEDS show correct bit sequence of the ASCII code of the key you pressed. Note that \verb|SWITCHES[0] == 0| displays the four lower bits, and \verb|SWICHES[0] == 1| displays the four upper bits. 
+Read the code to understand how the LEDS status is shown according to serial input.
+For example, if you type 'a', you should expect to see that \verb|LEDS[3:0] = 4'b0001| if \verb|SWITCHES[0] == 0|, and \verb|LEDS[3:0] = 4'b0110| if \verb|SWITCHES[0] == 1|. You might find the \href{http://www.asciitable.com/}{ASCII table} useful when testing.
+This test won't reveal bug that could be caused by multiple characters sent in a short time interval.
 
 To close \verb|screen|, type \verb|Ctrl-a| then \verb|Shift-k| and answer \verb|y| to the confirmation prompt.
 If you don't close screen properly, other students won't be able to access the serial port on your workstation.
@@ -267,8 +279,11 @@ In this wizard, we will set the depth of the captured data (number of debug/capt
 \begin{center}
 \includegraphics[width=0.7\textwidth]{figs/vivado-ila-3.png}
 \end{center}
+Now, we generate a new bitstream with the debug ILA cores: \emph{Generate Bitstream}. Vivado will ask  where we should save the debug constraints. Select \emph{Create a new file} as in the following picture to avoid overwriting the existing constraint file. Click \emph{OK} to finish the debug setup. 
 
-The following wizard asks where we should save the debug constraints. Select \emph{Create a new file} as in the following picture to avoid overwriting the existing constraint file. Click \emph{OK} to finish the debug setup. Now, we generate a new bitstream with the debug ILA cores: \emph{Generate Bitstream}.
+\begin{center}
+\includegraphics[width=0.4\textwidth]{figs/vivado-ila-4.png}
+\end{center}
 
 After bitstream generation, we connect and program the FPGA as usual. This time, you will see that, in addition to the bitstream file, we also load the debug probes file.
 
@@ -304,16 +319,26 @@ You can write a Python script to send multiple characters in a row to see if you
 
 \subsection{UART Transmitter}
 
-Once we have a character that we want to send out, transmitting it is simply a matter of shifting each bit of the character, plus the start and stop bits, out of a shift register on to the serial line.
+\begin{center}
+\includegraphics[width=0.4\textwidth]{figs/UART_Transmitter.png}
+\end{center}
+
+The UART Transmitter enqueues a character from a producer block on FPGA via Ready/Valid interface. Once we have a character that we want to send out (i.e., once Valid goes HIGH, and the transmitter is ready), transmitting it is simply a matter of shifting each bit of the enqeued character, plus the start and stop bits, out of a shift register on to the serial line.
 
 Remember, the serial baudrate is much slower than the system clock, so we must wait $SymbolEdgeTime = \frac{ClockFreq}{BaudRate}$ cycles between changing the character we're putting on the serial line.
-After we have shifted all 10 bits out of the shift register, we are done unless we have to send another frame immediately after.
+After we have shifted all 10 bits out of the shift register, we are done unless we have to send another frame immediately after. The transmitter should not be ready when it is in a middle of sending a frame.
 
 \textbf{Your task} is to complete the implementation of UART Transmitter in the file \verb|lab6/src/uart_transmitter.v|.
 
 \subsubsection{Testing}
 
-Similar to the previous exercise, you will need to use the following commands to build, implement, and test your project with the UART Transmitter module.
+The \verb|z1top_uart_tx| module stores a text data locally in the block RAMs. The role of the UART Transmitter is to enqueue that data and send it to your workstation over the serial interface. You should be able to see the text on your serial terminal after loading the bitstream.
+
+\begin{center}
+\includegraphics[width=0.4\textwidth]{figs/z1top_uart_tx.png}
+\end{center}
+
+Similar to the previous exercise, you will need to use the following commands to build, implement, and test your project with the UART Transmitter module. The provided testbench tests if your UART Transmitter can read multiple charactes successively and transmit them via the serial line.
 
 \begin{minted}{bash}
 
@@ -332,7 +357,7 @@ make program-fpga bs=bitstream_files/z1top_uart_tx.bit
 
 If you are more comfortable with the GUI mode, you can open the Vivado project right after the \texttt{make build-project} command.
 
-The \verb|z1top_uart_tx| module stores a text data locally in the block RAMs. The role of the UART Transmitter is to dequeue that data and send it to your workstation over the serial interface. You should be able to see the text on your serial terminal. Run
+Run:
 
 \begin{minted}{bash}
 screen $SERIALTTY 115200
@@ -405,7 +430,7 @@ make write-bitstream proj=z1top_draw_triangle
 make program-fpga bs=bitstream_files/z1top_draw_triangle.bit
 \end{minted}
 
-Every time you make change to the \verb|point_in_triangle| module, you should run a simulation to ensure that the functionality is still correct. A testbench has been provided for this purpose: \verb|lab6/sim/point_in_triangle_tb.v|. Once you pass the simulation, generate the bitstream and check the timing report to see if your design meets timing. A negative slack means a path in your design fails to meet the target clock period, and you should fix it. Look at the \textbf{VIOLATED} path(s) in the report, try to make sense of how that path corresponds to your Verilog code, and the delay at each primitives/sites on which the signal traverses that path, this should give you a hint of where to place your register(s) to cut the path. Since your design eventually boils down to FPGA primitives such as LUTs, FF, carry chains, or wires, sometimes it is difficult to tell exactly how the paths in the report are relevant to your Verilog source code. Nonetheless, you can make some educated guess of the delay of your path based on the dataflow graph of your circuit, as shown in the figure above. For instances, the delay on a path with a multiplier and a subtractor probably takes longer than a path with only an adder. Remember that FPGA is a spatial computing device, everything you write costs area and timing. Think carefully of which operators should you use. For example, if you want to scale a signal down, you probably need to think twice before using a divider; a right shift is much better in terms of hardware cost and is more FPGA-friendly. Depending on the quality of your FPGA board, a slightly negative-slack design can still work sometimes, but don't take it for granted. You should develop a practice of checking the timing report every time you finish implementation. If you believe you do everything right (up to Simulation), yet your design does not work on the board, check the timing.
+Every time you make change to the \verb|point_in_triangle| module, you should run a simulation to ensure that the functionality is still correct. A testbench has been provided for this purpose: \verb|lab6/sim/point_in_triangle_tb.v|. Once you pass the simulation, generate the bitstream and check the timing report to see if your design meets timing. A negative slack means a path in your design fails to meet the target clock period, and you should fix it. Look at the \textbf{VIOLATED} path(s) in the report, try to make sense of how that path corresponds to your Verilog code, and the delay at each primitives/sites on which the signal traverses that path, this should give you a hint of where to place your register(s) to cut the path. Since your design eventually boils down to FPGA primitives such as LUTs, FF, carry chains, or wires, sometimes it is difficult to tell exactly how the paths in the report are relevant to your Verilog source code. Nonetheless, you can make some educated guess of the delay of your path based on the dataflow graph of your circuit, as shown in the figure above. For instances, the delay on a path with a multiplier and a subtractor probably takes longer than a path with only an adder. Remember that FPGA is a spatial computing device, everything you write costs area and timing. Think carefully of which operators should you use. For example, if you want to scale a signal down, you probably need to think twice before using a divider; a right shift is much better in terms of hardware cost and is more FPGA-friendly. Depending on the quality of your FPGA board, a slightly negative-slack design can still work sometimes, but don't take it for granted. You should develop a practice of checking the timing report every time you finish implementation. If you believe you do everything right (up to Simulation), yet your design does not work on the board, check the timing report.
 
 %\newpage
 \section{Lab Deliverables (due: 8PM, Mar 13th, 2020)}
