@@ -187,17 +187,16 @@ In addition, the UART Receiver module dequeues the received character to a consu
 
 \subsubsection{Testing}
 
-We will test our UART Receiver with the provided top-level module \verb|z1top_uart_rx|. You can take a look at the file \verb|lab6/src/z1top_uart_rx.v| to see what it does. Similar to the previous lab, it interfaces with a display controller for streaming image stored locally in the Block RAMs. However, the module has been extended to receive new image from the serial input (\verb|FPGA_SERIAL_RX|). Your UART Receiver will receive a serial input from the host, and enqueue the pixel data to the module \verb|pixel_stream.v|. 
+We will test our UART Receiver with the provided top-level module \verb|z1top_uart_rx|. You can take a look at the file \verb|lab6/src/z1top_uart_rx.v| to see what it does. The cmodule interfaces with a display controller to stream an image stored locally in the Block RAMs to a display monitor. However, the module has been extended to receive new image from the serial input (\verb|FPGA_SERIAL_RX|). Concretely, your UART Receiver will receive a serial input from the host, and dequeue the pixel data to the module \verb|pixel_stream.v|. 
 
 \begin{center}
 \includegraphics[width=0.6\textwidth]{figs/z1top_uart_rx.png}
 \end{center}
 
-Use the following command to build your project with the UART Receiver module. If you get error during the build project, please remove all the "`include ../lib/EECS151.v" statements in your code.
+Use the following command to build your project with the UART Receiver module. If you get error during the build process, please remove all the "`include ../lib/EECS151.v" statements in your code.
 
 \begin{minted}{bash}
-# This command builds a Vivado project named z1top_uart_rx_proj
-# to interface with an IP.
+# This command builds Vivado project z1top_uart_rx_proj
 make build-project proj=z1top_uart_rx
 \end{minted}
 
@@ -231,9 +230,11 @@ We will run a Python script to provide a new image data to the PYNQ via the seri
 # pip3 install --user matplotlib
 # pip3 install --user Image
 /usr/bin/python3 scripts/stream_img_from_serial.py
+
 \end{minted}
 
-If your module works correctly, when you hook a monitor to your PYNQ through an HDMI cable and turn on \verb|SWITCHES[1]|, you will see that the original displayed image is being overwritten with a new image gradually. If your image is all messed up, you should check the logic of when you reset the bit counter and the clock counter (e.g., too late?). Since the serial interface is asynchronous, do not make any assumption that it will behave nicely (synchronously) with your FPGA clock signal.
+If you get an error related to serial device, try unplugging and plugging your UART-USB cable to your workstation, and rerun the Python script.
+If your module works correctly, when you hook a monitor to your PYNQ through an HDMI cable and turn on \verb|SWITCHES[1]|, you will see that the original displayed image is being overwritten with a new image gradually. If your image is all messed up, you should check the logic of when you reset the bit counter and the clock counter (e.g., too late?) in your UART Receiver implementation. Since the serial interface is asynchronous, do not make any assumption that it will behave nicely (synchronously) with your FPGA clock signal.
 
 Alternatively, if you don't have a monitor around, you can test your UART Receiver with a serial terminal on your workstation.
 
@@ -297,7 +298,7 @@ The waveform pane will show up after we program the FPGA with the probes file. T
 \includegraphics[width=0.7\textwidth]{figs/vivado-ila-7.png}
 \end{center}
 
-Select the signal \verb|FPGA_SERIAL_RX| from the popped-up window. Now, we will set the trigger condition. Also in the \emph{Trigger Setup - hw\_ila\_1} pane, select \emph{0 (logical zero} for the \emph{Value} column. The remaining columns can be kept unchanged. Essentially, we are comparing \verb|FPGA_SERIAL_RX| to 0: if the comparison is true, this will trigger the ILA cores. This makes sense, since the serial input is LOW when it wants to start a transaction; we want to begin capturing events at that moment.
+Select the signal \verb|FPGA_SERIAL_RX| from the popped-up window. Now, we will set the trigger condition. Also in the \emph{Trigger Setup - hw\_ila\_1} pane, select \emph{0 (logical zero)} for the \emph{Value} column. The remaining columns can be kept unchanged. Essentially, we are comparing \verb|FPGA_SERIAL_RX| to 0: if the comparison is true, this will trigger the ILA cores. This makes sense, since the serial input is LOW when it wants to start a transaction; we want to begin capturing events at that moment.
 
 \begin{center}
 \includegraphics[width=0.7\textwidth]{figs/vivado-ila-8.png}
@@ -388,7 +389,7 @@ Now, open \verb|screen| as similar to previous sections. Try hitting your keyboa
 \begin{minted}{bash}
 # The command line argument is a text file to be sent over the serial line.
 # Here is one example:
-python3 scripts/echo.py src/z1top_uart_echo.v
+/usr/bin/python3 scripts/echo.py src/z1top_uart_echo.v
 \end{minted}
 
 After the script prompts for user input, open \verb|screen| as usual in a separate terminal before hitting \texttt{Enter}. If everything goes well, you should see the text content shown in the serial terminal. Good work! Your UART Transmitter and Receiver are now thoroughly tested.
@@ -433,7 +434,7 @@ make program-fpga bs=bitstream_files/z1top_draw_triangle.bit
 Every time you make change to the \verb|point_in_triangle| module, you should run a simulation to ensure that the functionality is still correct. A testbench has been provided for this purpose: \verb|lab6/sim/point_in_triangle_tb.v|. Once you pass the simulation, generate the bitstream and check the timing report to see if your design meets timing. A negative slack means a path in your design fails to meet the target clock period, and you should fix it. Look at the \textbf{VIOLATED} path(s) in the report, try to make sense of how that path corresponds to your Verilog code, and the delay at each primitives/sites on which the signal traverses that path, this should give you a hint of where to place your register(s) to cut the path. Since your design eventually boils down to FPGA primitives such as LUTs, FF, carry chains, or wires, sometimes it is difficult to tell exactly how the paths in the report are relevant to your Verilog source code. Nonetheless, you can make some educated guess of the delay of your path based on the dataflow graph of your circuit, as shown in the figure above. For instances, the delay on a path with a multiplier and a subtractor probably takes longer than a path with only an adder. Remember that FPGA is a spatial computing device, everything you write costs area and timing. Think carefully of which operators should you use. For example, if you want to scale a signal down, you probably need to think twice before using a divider; a right shift is much better in terms of hardware cost and is more FPGA-friendly. Depending on the quality of your FPGA board, a slightly negative-slack design can still work sometimes, but don't take it for granted. You should develop a practice of checking the timing report every time you finish implementation. If you believe you do everything right (up to Simulation), yet your design does not work on the board, check the timing report.
 
 %\newpage
-\section{Lab Deliverables (due: 8PM, Mar 13th, 2020)}
+\section{Lab Deliverables (due: 3.30PM, Mar 19th, 2020)}
 \subsection{Lab Checkoff}
 To checkoff for this lab, have these things ready to show the TA:
 \begin{enumerate}
