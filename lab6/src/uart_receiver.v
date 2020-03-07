@@ -14,11 +14,7 @@ module uart_receiver #(
     input serial_in
 );
     // See diagram in the lab guide
-
-    // For some reason, this offset value is needed to make the high-speed test work well
-    // Unless you are sure of what you're doing, leave the offset as it is
-    localparam OFFSET              = 10;
-    localparam SYMBOL_EDGE_TIME    = CLOCK_FREQ / BAUD_RATE - OFFSET;
+    localparam SYMBOL_EDGE_TIME    = CLOCK_FREQ / BAUD_RATE;
     localparam SAMPLE_TIME         = SYMBOL_EDGE_TIME / 2;
     localparam CLOCK_COUNTER_WIDTH = $clog2(SYMBOL_EDGE_TIME);
 
@@ -37,7 +33,7 @@ module uart_receiver #(
     wire [3:0] bit_counter_next;
     wire bit_counter_ce, bit_counter_rst;
 
-    // Count to 10
+    // Keep track of how many bits have been sampled
     REGISTER_R_CE #(.N(4), .INIT(0)) bit_counter (
         .q(bit_counter_val),
         .d(bit_counter_next),
