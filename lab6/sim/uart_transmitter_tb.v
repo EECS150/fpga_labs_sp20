@@ -10,6 +10,8 @@ module uart_transmitter_tb();
     localparam CHAR0 = 8'h61; // ~ 'a'
     localparam NUM_CHARS = 10;
 
+    localparam DELAY = 100;
+
     reg clk, rst;
     initial clk = 0;
     always #(CLOCK_PERIOD / 2) clk = ~clk;
@@ -98,10 +100,13 @@ module uart_transmitter_tb();
         // Delay for some time
         repeat (100) @(posedge clk);
 
-        // The testbench has valid data to send to UART_Transmitter
-        data_in_valid = 1;
 
         for (c = 0; c < NUM_CHARS; c = c + 1) begin
+            data_in_valid = 0;
+            #(DELAY);
+            // The testbench has valid data to send to UART_Transmitter
+            data_in_valid = 1;
+
             // Wait until serial_out is LOW (start of transaction)
             while (serial_out == 1) begin
                 @(posedge clk);
@@ -122,7 +127,7 @@ module uart_transmitter_tb();
         for (c = 0; c < NUM_CHARS; c = c + 1) begin
             if (chars_from_data_in[c] !== chars_to_host[c][8:1]) begin
                 $display("Mismatches at char %d: char_to_host=%h, char_from_data_in=%h",
-                         c, chars_to_host[c], chars_from_data_in[c]);
+                         c, chars_to_host[c][8:1], chars_from_data_in[c]);
                 num_mismatches = num_mismatches + 1;
             end
             if (chars_to_host[c][0] != 0)
@@ -136,13 +141,17 @@ module uart_transmitter_tb();
             $finish();
         end
 
-        $display("Test passed!");
+        if (num_mismatches > 0)
+            $display("Test failed!");
+        else
+            $display("Test passed!");
+
         #100;
         $finish();
     end
 
     initial begin
-        #(BAUD_PERIOD * 10 * (NUM_CHARS + 1));
+        #((BAUD_PERIOD + DELAY) * 10 * (NUM_CHARS + 1));
         $display("TIMEOUT");
         $finish();
     end
